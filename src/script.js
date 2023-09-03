@@ -90,12 +90,19 @@ class App {
     // Attach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
-    containerWorkouts.addEventListener('click', this._handleWorkoutClick.bind(this));
 
-    containerOptionsBtns.addEventListener('click', this._handleOptionClick.bind(this));
-    btnClearAll.addEventListener('click', this._showMsg);
-    yesBtn.addEventListener('click', this._clearWorkoutList);
-    noBtn.addEventListener('click', this._showMsg);
+    containerWorkouts.addEventListener('click', (e) =>
+      e.target.closest('.ph') ? this._deleteWorkout(e) : this._moveToPopup(e)
+    );
+
+    btnClearAll.addEventListener('click', this._showMsg.bind(this));
+
+    yesBtn.addEventListener('click', () => {
+      this._clearWorkoutList();
+      msgContainer.classList.add('msg__hidden');
+    });
+
+    noBtn.addEventListener('click', () => msgContainer.classList.add('msg__hidden'));
   }
 
   _getPosition() {
@@ -129,17 +136,6 @@ class App {
     });
 
     this._renderCurrentPositionMarker(coords);
-  }
-
-  _handleWorkoutClick(e) {
-    this._moveToPopup(e);
-    this._deleteWorkout(e);
-    this._updateDataInfo(e);
-  }
-
-  _handleOptionClick() {
-    // this._clearWorkoutList();
-    // this._showMsg();
   }
 
   _showForm(mapE) {
@@ -212,7 +208,10 @@ class App {
   }
 
   _renderWorkoutMarker(workout) {
-    this.#markers = L.marker(workout.coords)
+    const marker = L.marker(workout.coords);
+    this.#markers.push(marker);
+
+    marker
       .addTo(this.#map)
       .bindPopup(
         L.popup({
@@ -320,49 +319,33 @@ class App {
   _deleteWorkout(e) {
     const deleteEl = e.target.closest('.workout');
     const deleteBtn = e.target.closest('.workout__modify');
+
     if (!deleteBtn) return;
 
-    // console.log(this.#markers);
+    this.#workouts.forEach((workout, i) => {
+      if (deleteEl.dataset.id === workout.id) {
+        this.#workouts = this.#workouts.filter((el) => el.id !== deleteEl.dataset.id);
+        this.#markers[i].remove();
+        this.#markers.splice(i, 1);
 
-    // Remove form array
-    const deleteId = deleteEl.dataset.id;
-    this.#workouts = this.#workouts.filter((el) => el.id !== deleteId);
-    // console.log(this.#workouts);
-
-    // Remove elemet form list and map
-    deleteEl.remove();
-    this.#markers.removeFrom(this.#map);
-
-    // console.log(this.#markers);
-
-    // Remove and update localStorage
-    const data = JSON.parse(localStorage.getItem('workouts'));
-    const updatedData = data.filter((el) => el.id !== deleteId);
-    this._setLocalStorage(updatedData);
+        this._setLocalStorage(this.#workouts);
+        deleteEl.remove();
+      }
+    });
   }
 
   _clearWorkoutList() {
-    // const clearBtn = e.target.closest('.yes__btn');
-    // console.log(yesBtn);
-    // if (!clearBtn) return;
-
     // Remove form localStorage
     localStorage.removeItem('workouts');
-    location.reload();
+    this.#workouts = [];
+    this.#markers.forEach((marker) => this.#map.removeLayer(marker));
+    this.#markers = [];
+    containerWorkouts.innerHTML = '';
   }
 
   _showMsg() {
-    msgContainer.classList.toggle('msg__hidden');
-  }
-
-  _updateDataInfo(e) {
-    const elementType = e.target.closest('.workout');
-    const element = e.target.closest('.workout__value');
-    if (!element) return;
-
-    console.log(elementType);
-    const newTypeValue = +element.dataset.type;
-    console.log(newTypeValue);
+    if (this.#workouts.length === 0) return;
+    msgContainer.classList.remove('msg__hidden');
   }
 
   _setLocalStorage(workout) {
