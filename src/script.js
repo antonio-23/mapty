@@ -127,6 +127,8 @@ class App {
     this.#workouts.forEach((work) => {
       this._renderWorkoutMarker(work);
     });
+
+    this._renderCurrentPositionMarker(coords);
   }
 
   _handleWorkoutClick(e) {
@@ -222,6 +224,22 @@ class App {
         })
       )
       .setPopupContent(`${workout.type === 'running' ? '🏃‍♂️' : '🚴‍♀️'} ${workout.description}`)
+      .openPopup();
+  }
+
+  _renderCurrentPositionMarker(position) {
+    L.marker(position)
+      .addTo(this.#map)
+      .bindPopup(
+        L.popup({
+          maxWidth: 250,
+          minWidth: 100,
+          autoClose: false,
+          closeOnClick: false,
+          className: `current-popup`,
+        })
+      )
+      .setPopupContent(`📍 Current Location`)
       .openPopup();
   }
 
