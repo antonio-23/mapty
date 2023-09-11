@@ -79,6 +79,10 @@ class App {
   #mapEvent;
   #workouts = [];
   #markers = [];
+  #sortOptions = ['distanceASC', 'distanceDESC', 'durationASC', 'durationDESC', 'default'];
+  #count = 0;
+  #latitude;
+  #longitude;
 
   constructor() {
     // Get user's position
@@ -94,6 +98,8 @@ class App {
     containerWorkouts.addEventListener('click', (e) =>
       e.target.closest('.ph') ? this._deleteWorkout(e) : this._moveToPopup(e)
     );
+
+    btnSort.addEventListener('click', this._sortWorkouts.bind(this));
 
     btnClearAll.addEventListener('click', this._showMsg.bind(this));
 
@@ -114,10 +120,10 @@ class App {
   }
 
   _loadMap(position) {
-    const { latitude } = position.coords;
-    const { longitude } = position.coords;
+    this.#latitude = position.coords.latitude;
+    this.#longitude = position.coords.longitude;
 
-    const coords = [latitude, longitude];
+    const coords = [this.#latitude, this.#longitude];
     // console.log(coords);
 
     this.#map = L.map('map').setView(coords, this.#mapZoomLevel);
@@ -136,6 +142,26 @@ class App {
     });
 
     this._renderCurrentPositionMarker(coords);
+  }
+
+  _geoCode([lat, lng]) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        console.log(lat, lng);
+        const res = await fetch(`https://geocode.xyz/${lat},${lng}?geoit=json`);
+        if (!res.ok) throw new Error('Problem getting location data');
+
+        const dataGeo = await res.json();
+        console.log(dataGeo);
+        const info = [dataGeo.country, dataGeo.city];
+        console.log(info);
+
+        resolve(info);
+      } catch (error) {
+        console.error(error);
+        reject(error);
+      }
+    });
   }
 
   _showForm(mapE) {
@@ -205,6 +231,8 @@ class App {
 
     // Set local storage to all workouts
     this._setLocalStorage(this.#workouts);
+
+    this._geoCode([this.#latitude, this.#longitude]);
   }
 
   _renderWorkoutMarker(workout) {
@@ -314,6 +342,36 @@ class App {
         duration: 1,
       },
     });
+  }
+
+  _sortWorkouts() {
+    const currentValue = this.#sortOptions[this.#count];
+
+    let workoutsArr = this.#workouts.map((w) => w);
+
+    if (currentValue === 'distanceASC') {
+      workoutsArr.sort((a, b) => a.distance - b.distance);
+    }
+    if (currentValue === 'distanceDESC') {
+      workoutsArr.sort((a, b) => b.distance - a.distance);
+    }
+    if (currentValue === 'durationASC') {
+      workoutsArr.sort((a, b) => a.duration - b.duration);
+    }
+    if (currentValue === 'durationDESC') {
+      workoutsArr.sort((a, b) => b.duration - a.duration);
+    }
+    if (currentValue === 'default') {
+      workoutsArr = this.#workouts;
+    }
+
+    containerWorkouts.querySelectorAll('.workout').forEach((workout) => workout.remove());
+
+    workoutsArr.forEach((workout) => {
+      this._renderWorkout(workout);
+    });
+
+    this.#count = (this.#count + 1) % this.#sortOptions.length;
   }
 
   _deleteWorkout(e) {

@@ -5,6 +5,7 @@
 
   --color-dark--1: #2d3439;
   --color-dark--2: #42484d;
+  --color-dark--3: #353d42;
   --color-light--1: #aaa;
   --color-light--2: #ececec;
   --color-light--3: rgb(214, 222, 224);
@@ -69,6 +70,17 @@ a:visited {
 
 .workout {
   background-color: var(--color-dark--2);
+  border-radius: 5px;
+  padding: 1.5rem 2.25rem;
+  margin-bottom: 1.75rem;
+  cursor: pointer;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+}
+.workout:hover {
+  background-color: var(--color-dark--3);
   border-radius: 5px;
   padding: 1.5rem 2.25rem;
   margin-bottom: 1.75rem;
