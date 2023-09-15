@@ -5,27 +5,29 @@ class Workout {
   date = new Date();
   id = (Date.now() + '').slice(-10);
 
-  constructor(coords, distance, duration) {
+  constructor(coords, distance, duration, city) {
     this.coords = coords; // [lat, lng]
     this.distance = distance; // in km
     this.duration = duration; // in min
+    this.city = city;
   }
 
-  _setDescription() {
-    this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${moment().format(
-      'MMMM Do'
-    )}`;
+  _setDescription(city) {
+    console.log(city);
+    this.description = `${this.type[0].toUpperCase()}${this.type.slice(
+      1
+    )} in ${city} on ${moment().format('MMMM Do')}`;
   }
 }
 
 class Running extends Workout {
   type = 'running';
 
-  constructor(coords, distance, duration, cadence) {
-    super(coords, distance, duration);
+  constructor(coords, distance, duration, cadence, city) {
+    super(coords, distance, duration, city);
     this.cadence = cadence;
     this.calcPace();
-    this._setDescription();
+    this._setDescription(city);
   }
 
   calcPace() {
@@ -38,11 +40,11 @@ class Running extends Workout {
 class Cycling extends Workout {
   type = 'cycling';
 
-  constructor(coords, distance, duration, elevationGain) {
-    super(coords, distance, duration);
+  constructor(coords, distance, duration, elevationGain, city) {
+    super(coords, distance, duration, city);
     this.elevation = elevationGain;
     this.calcSpeed();
-    this._setDescription();
+    this._setDescription(city);
   }
 
   calcSpeed() {
@@ -83,6 +85,7 @@ class App {
   #count = 0;
   #latitude;
   #longitude;
+  #city;
 
   constructor() {
     // Get user's position
@@ -109,6 +112,8 @@ class App {
     });
 
     noBtn.addEventListener('click', () => msgContainer.classList.add('msg__hidden'));
+
+    // this._setDescription();
   }
 
   _getPosition() {
@@ -144,17 +149,18 @@ class App {
     this._renderCurrentPositionMarker(coords);
   }
 
-  _geoCode([lat, lng]) {
+  _getGeoCode([lat, lng]) {
     return new Promise(async (resolve, reject) => {
       try {
         console.log(lat, lng);
         const res = await fetch(`https://geocode.xyz/${lat},${lng}?geoit=json`);
+
         if (!res.ok) throw new Error('Problem getting location data');
 
         const dataGeo = await res.json();
-        console.log(dataGeo);
-        const info = [dataGeo.country, dataGeo.city];
-        console.log(info);
+
+        const info = [dataGeo.city];
+        this.#city = dataGeo.city;
 
         resolve(info);
       } catch (error) {
@@ -168,6 +174,7 @@ class App {
     this.#mapEvent = mapE;
     form.classList.remove('hidden');
     inputDistance.focus();
+    this._getGeoCode([this.#latitude, this.#longitude]);
   }
 
   _hideForm() {
@@ -194,6 +201,7 @@ class App {
     const distance = +inputDistance.value;
     const duration = +inputDuration.value;
     const { lat, lng } = this.#mapEvent.latlng;
+    const city = this.#city;
     let workout;
 
     // If workout running, create running object
@@ -203,7 +211,7 @@ class App {
       if (!validInputs(distance, duration, cadence) || !allPositive(distance, duration, cadence))
         return alert('Inputs have to be positive numbers!');
 
-      workout = new Running([lat, lng], distance, duration, cadence);
+      workout = new Running([lat, lng], distance, duration, cadence, city);
     }
 
     // If workout cycling, create cycling object
@@ -213,7 +221,7 @@ class App {
       if (!validInputs(distance, duration, elevation) || !allPositive(distance, duration))
         return alert('Inputs have to be positive numbers!');
 
-      workout = new Cycling([lat, lng], distance, duration, elevation);
+      workout = new Cycling([lat, lng], distance, duration, elevation, city);
     }
 
     // Add new object to workout array
@@ -232,7 +240,7 @@ class App {
     // Set local storage to all workouts
     this._setLocalStorage(this.#workouts);
 
-    this._geoCode([this.#latitude, this.#longitude]);
+    // this._getGeoCode([this.#latitude, this.#longitude]);
   }
 
   _renderWorkoutMarker(workout) {
@@ -395,10 +403,7 @@ class App {
   _clearWorkoutList() {
     // Remove form localStorage
     localStorage.removeItem('workouts');
-    this.#workouts = [];
-    this.#markers.forEach((marker) => this.#map.removeLayer(marker));
-    this.#markers = [];
-    containerWorkouts.innerHTML = '';
+    location.reload();
   }
 
   _showMsg() {
