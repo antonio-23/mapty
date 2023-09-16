@@ -105,7 +105,8 @@ a:visited {
 
 .workout__modify {
   justify-self: right;
-  align-self: center;
+  align-self: start;
+  padding-top: 0.5rem;
 }
 
 .ph-x {
@@ -327,4 +328,34 @@ hr {
 
 .msg__hidden {
   display: none;
+}
+
+.msg__overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999999999;
+}
+
+.msg__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  background-color: var(--color-dark--1);
+  padding: 3.5rem;
+  height: auto;
+}
+
+.msg__button {
+  color: #fff;
+  border: none;
+  background-color: var(--color-brand--3);
+  text-transform: uppercase;
+  padding: 1.5rem;
+  border-radius: 5px;
+  min-width: 70px;
 }

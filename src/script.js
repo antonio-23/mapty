@@ -16,7 +16,7 @@ class Workout {
     console.log(city);
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(
       1
-    )} in ${city} on ${moment().format('MMMM Do')}`;
+    )} in ${city} on ${moment().format('MMMM Do, h:mm a')}`;
   }
 }
 
@@ -75,6 +75,8 @@ const msgContainer = document.querySelector('.confirmation__container');
 const yesBtn = document.querySelector('.yes__btn');
 const noBtn = document.querySelector('.no__btn');
 
+let msgShow = false;
+
 class App {
   #map;
   #mapZoomLevel = 13;
@@ -111,9 +113,8 @@ class App {
       msgContainer.classList.add('msg__hidden');
     });
 
-    noBtn.addEventListener('click', () => msgContainer.classList.add('msg__hidden'));
-
-    // this._setDescription();
+    document.addEventListener('keydown', () => msgContainer.classList.add('msg__hidden')) ||
+      noBtn.addEventListener('click', () => msgContainer.classList.add('msg__hidden'));
   }
 
   _getPosition() {
@@ -204,12 +205,14 @@ class App {
     const city = this.#city;
     let workout;
 
+    // this._errorMsg('Inputs have to be positive numbers!');
     // If workout running, create running object
     if (type === 'running') {
       const cadence = +inputCadence.value;
       // Check if data is valid
       if (!validInputs(distance, duration, cadence) || !allPositive(distance, duration, cadence))
-        return alert('Inputs have to be positive numbers!');
+        // return alert('Inputs have to be positive numbers!');
+        return this._errorMsg('Inputs have to be positive numbers!');
 
       workout = new Running([lat, lng], distance, duration, cadence, city);
     }
@@ -219,7 +222,8 @@ class App {
       const elevation = +inputElevation.value;
       // Check if data is valid
       if (!validInputs(distance, duration, elevation) || !allPositive(distance, duration))
-        return alert('Inputs have to be positive numbers!');
+        // return alert('Inputs have to be positive numbers!');
+        return this._errorMsg('Inputs have to be positive numbers!');
 
       workout = new Cycling([lat, lng], distance, duration, elevation, city);
     }
@@ -239,8 +243,6 @@ class App {
 
     // Set local storage to all workouts
     this._setLocalStorage(this.#workouts);
-
-    // this._getGeoCode([this.#latitude, this.#longitude]);
   }
 
   _renderWorkoutMarker(workout) {
@@ -284,9 +286,6 @@ class App {
       <h2 class="workout__title">${workout.description}</h2>
       <div class="workout__modify">
         <i class="ph ph-x"></i>
-        <ul class="options-list">
-          <li>Usuń</li>
-        </ul>
       </div>
 
       <div class="workout__details">
@@ -409,6 +408,41 @@ class App {
   _showMsg() {
     if (this.#workouts.length === 0) return;
     msgContainer.classList.remove('msg__hidden');
+  }
+
+  _errorMsg(msg) {
+    const msgOverlay = document.createElement('div');
+    msgOverlay.classList.add('msg__overlay');
+
+    const msgContainer = document.createElement('div');
+    msgContainer.classList.add('msg__container');
+
+    const msgText = document.createElement('h1');
+    msgText.classList.add('msg__text');
+    msgText.textContent = msg;
+
+    const msgButton = document.createElement('button');
+    msgButton.classList.add('msg__button');
+    msgButton.textContent = 'Close';
+
+    msgOverlay.appendChild(msgContainer);
+
+    msgContainer.appendChild(msgText);
+    msgContainer.appendChild(msgButton);
+
+    document.body.appendChild(msgOverlay);
+
+    const btnClose = document.querySelector('.msg__button');
+
+    btnClose.addEventListener('click', () => closeMsg());
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMsg();
+    });
+
+    function closeMsg() {
+      msgOverlay.remove();
+      msgShow = false;
+    }
   }
 
   _setLocalStorage(workout) {
