@@ -1,6 +1,21 @@
 'use strict';
 import moment from 'moment';
 
+const form = document.querySelector('.form');
+const containerWorkouts = document.querySelector('.workouts');
+const inputType = document.querySelector('.form__input--type');
+const inputDistance = document.querySelector('.form__input--distance');
+const inputDuration = document.querySelector('.form__input--duration');
+const inputCadence = document.querySelector('.form__input--cadence');
+const inputElevation = document.querySelector('.form__input--elevation');
+const btnSort = document.querySelector('.sort__btn');
+const btnClearAll = document.querySelector('.clr__all__btn');
+const msgContainer = document.querySelector('.confirmation__container');
+const yesBtn = document.querySelector('.yes__btn');
+const noBtn = document.querySelector('.no__btn');
+
+let msgShow = false;
+
 class Workout {
   date = new Date();
   id = (Date.now() + '').slice(-10);
@@ -13,7 +28,6 @@ class Workout {
   }
 
   _setDescription(city) {
-    console.log(city);
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(
       1
     )} in ${city} on ${moment().format('MMMM Do, h:mm a')}`;
@@ -53,29 +67,6 @@ class Cycling extends Workout {
     return this.speed;
   }
 }
-
-// const run = new Running([39, -12], 5.2, 24, 178);
-// const cycling = new Cycling([39, -12], 28, 98, 583);
-// console.log(run, cycling);
-
-// ========================================
-// APPLICATION ARCHITECTURE
-
-const form = document.querySelector('.form');
-const containerWorkouts = document.querySelector('.workouts');
-const containerOptionsBtns = document.querySelector('.options__btn');
-const inputType = document.querySelector('.form__input--type');
-const inputDistance = document.querySelector('.form__input--distance');
-const inputDuration = document.querySelector('.form__input--duration');
-const inputCadence = document.querySelector('.form__input--cadence');
-const inputElevation = document.querySelector('.form__input--elevation');
-const btnSort = document.querySelector('.sort__btn');
-const btnClearAll = document.querySelector('.clr__all__btn');
-const msgContainer = document.querySelector('.confirmation__container');
-const yesBtn = document.querySelector('.yes__btn');
-const noBtn = document.querySelector('.no__btn');
-
-let msgShow = false;
 
 class App {
   #map;
@@ -130,10 +121,8 @@ class App {
     this.#longitude = position.coords.longitude;
 
     const coords = [this.#latitude, this.#longitude];
-    // console.log(coords);
 
     this.#map = L.map('map').setView(coords, this.#mapZoomLevel);
-    // console.log(this.#map);
 
     L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
@@ -153,7 +142,6 @@ class App {
   _getGeoCode([lat, lng]) {
     return new Promise(async (resolve, reject) => {
       try {
-        console.log(lat, lng);
         const res = await fetch(`https://geocode.xyz/${lat},${lng}?geoit=json`);
 
         if (!res.ok) throw new Error('Problem getting location data');
@@ -161,11 +149,16 @@ class App {
         const dataGeo = await res.json();
 
         const info = [dataGeo.city];
+
+        if (info.at(0) === 'Throttled! See geocode.xyz/pricing')
+          throw new Error('Please try adding the location again 😉');
+
         this.#city = dataGeo.city;
 
         resolve(info);
       } catch (error) {
         console.error(error);
+        this._errorMsg(error);
         reject(error);
       }
     });
@@ -205,13 +198,11 @@ class App {
     const city = this.#city;
     let workout;
 
-    // this._errorMsg('Inputs have to be positive numbers!');
     // If workout running, create running object
     if (type === 'running') {
       const cadence = +inputCadence.value;
       // Check if data is valid
       if (!validInputs(distance, duration, cadence) || !allPositive(distance, duration, cadence))
-        // return alert('Inputs have to be positive numbers!');
         return this._errorMsg('Inputs have to be positive numbers!');
 
       workout = new Running([lat, lng], distance, duration, cadence, city);
@@ -222,7 +213,6 @@ class App {
       const elevation = +inputElevation.value;
       // Check if data is valid
       if (!validInputs(distance, duration, elevation) || !allPositive(distance, duration))
-        // return alert('Inputs have to be positive numbers!');
         return this._errorMsg('Inputs have to be positive numbers!');
 
       workout = new Cycling([lat, lng], distance, duration, elevation, city);
@@ -230,7 +220,6 @@ class App {
 
     // Add new object to workout array
     this.#workouts.push(workout);
-    // console.log(workout);
 
     // Render workout on map as marker
     this._renderWorkoutMarker(workout);
@@ -341,7 +330,6 @@ class App {
     if (!workoutEl) return;
 
     const workout = this.#workouts.find((work) => work.id === workoutEl.dataset.id);
-    //  console.log(workout);
 
     this.#map.setView(workout.coords, this.#mapZoomLevel, {
       animate: true,
