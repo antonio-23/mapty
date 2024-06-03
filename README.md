@@ -1,4 +1,4 @@
-# MAPTY | [LIVE DEMO](https://mapty-antonio-23.netlify.app)
+# MAPTY | [LIVE DEMO](https://mapty-antdev.netlify.app)
 
 
 ## 📝 Project description
